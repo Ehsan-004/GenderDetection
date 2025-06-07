@@ -8,7 +8,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 
-model = torch.load('mobilenet_gender_fullmodel.pth', map_location=device, weights_only=False)
+model = torch.load('models/mobilenet_gender_fullmodel.pth', map_location=device, weights_only=False)
 model = model.to(device)
 model.eval()
 
@@ -29,11 +29,17 @@ faceXML = cv2.CascadeClassifier('files/haarcascade_frontalface_default.xml')
 smileXML = cv2.CascadeClassifier('files/haarcascade_smile.xml')
 
 cap = cv2.VideoCapture(0)
+main_template = cv2.imread("files/main.png")
+
+# point position: (240, 339)
+# point position: (95, 342)
 
 if not cap.isOpened():
     print("Error: Could not open video stream.")
     exit()
+    
 while True:
+    
     ret, frame = cap.read()
     if not ret:
         print("Failed to grab frame")
@@ -43,6 +49,12 @@ while True:
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
     faces = faceXML.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    
+    
+    main_template[115:115+480, 565:565+640] = frame
+    
+    
+    
 
     for x, y, w, h in faces:
         cv2.rectangle(frame, (x,y), (x+w, y+h), (255, 255, 86), 2)
@@ -65,17 +77,21 @@ while True:
 
             gender_text = f"{predicted_gender} ({confidence:.2f}%)"
             cv2.putText(frame, gender_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 86), 2)
+            cv2.rectangle(main_template, (85, 320), (395, 360), (255, 255, 255), -1)
+            cv2.putText(main_template, gender_text, (95, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 86), 2)
 
         except Exception as e:
             cv2.putText(frame, "Error in Gender", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             print(f"Error processing gender: {e}")
 
         
-        smiles = smileXML.detectMultiScale(roi_gray, scaleFactor=1.7, minNeighbors=20, minSize=(25, 25))
-        for (sx, sy, sw, sh) in smiles:
-            cv2.rectangle(roi_color, (sx, sy), (sx+sw, sy+sh), (52, 166, 83), 2)
+        # smiles = smileXML.detectMultiScale(roi_gray, scaleFactor=1.7, minNeighbors=20, minSize=(25, 25))
+        # for (sx, sy, sw, sh) in smiles:
+        #     cv2.rectangle(roi_color, (sx, sy), (sx+sw, sy+sh), (52, 166, 83), 2)
 
     cv2.imshow('Face and Gender Detection', frame)
+    cv2.imshow("gender recognition", main_template)
+    cv2.rectangle(main_template, (85, 320), (395, 360), (255, 255, 255), -1)
 
     if (cv2.waitKey(1) & 0xFF == ord('q')):
         break
