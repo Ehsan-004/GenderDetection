@@ -1,0 +1,7 @@
+data/
+
+files/gender_dataset.zip
+
+venv/
+
+__pycache__/
